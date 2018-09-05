@@ -110,10 +110,10 @@ state_cost = {
 }
 
 _A = np.zeros((2, 44, 44))
-for i in xrange(3):
+for i in range(3):
     _A[0, i, 17+i] = 1.0
     _A[0, i, 20+i] = -1.0
-for i in xrange(6):
+for i in range(6):
     _A[1, i, 14+i] = 1.0
     _A[1, i, 20+i] = -1.0
 

@@ -75,3 +75,10 @@ AGENT_MUJOCO = {
 AGENT_BOX2D = {
     'render': True,
 }
+
+AGENT_BAXTER = {
+    'frequency':10,
+    'end_effector_points':np.array([[]]),
+    'trial_timeout': 20,
+    'reset_conditions': [],
+}

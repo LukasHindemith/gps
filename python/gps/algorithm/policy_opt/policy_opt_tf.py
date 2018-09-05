@@ -147,7 +147,7 @@ class PolicyOptTf(PolicyOpt):
 
         # Assuming that N*T >= self.batch_size.
         batches_per_epoch = np.floor(N*T / self.batch_size)
-        idx = range(N*T)
+        idx = list(range(N*T))
         average_loss = 0
         np.random.shuffle(idx)
 

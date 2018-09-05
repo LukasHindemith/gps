@@ -110,7 +110,7 @@ algorithm = {
     'sample_on_policy': True,
     'plot_dir': EXP_DIR,
     'target_end_effector': [np.concatenate([np.array([.1, -.1, .01])+ agent['pos_body_offset'][i][0], np.array([0., 0., 0.])])
-                            for i in xrange(CONDITIONS)],
+                            for i in range(CONDITIONS)],
 }
 
 

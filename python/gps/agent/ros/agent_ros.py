@@ -11,7 +11,7 @@ from gps.agent.config import AGENT_ROS
 from gps.agent.ros.ros_utils import ServiceEmulator, msg_to_sample, \
         policy_to_msg, tf_policy_to_action_msg, tf_obs_msg_to_numpy
 from gps.proto.gps_pb2 import TRIAL_ARM, AUXILIARY_ARM
-from gps_agent_pkg.msg import TrialCommand, SampleResult, PositionCommand, \
+from gps_baxter_pkg.msg import TrialCommand, SampleResult, PositionCommand, \
         RelaxCommand, DataRequest, TfActionCommand, TfObsData
 try:
     from gps.algorithm.policy.tf_policy import TfPolicy

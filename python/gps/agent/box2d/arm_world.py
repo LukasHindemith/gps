@@ -134,7 +134,6 @@ class ArmWorld(Framework):
         self.body2.angularVelocity = 0
         self.set_joint_angles(self.body1, self.body2, self.x0[0], self.x0[1])
 
-
     def get_state(self):
         """Retrieves the state of the point mass"""
         state = {JOINT_ANGLES: np.array([self.joint1.angle,
@@ -142,6 +141,5 @@ class ArmWorld(Framework):
                  JOINT_VELOCITIES: np.array([self.joint1.speed,
                                              self.joint2.speed]),
                  END_EFFECTOR_POINTS: np.append(np.array(self.body2.position),[0])}
-
         return state
 

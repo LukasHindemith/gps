@@ -109,7 +109,7 @@ fk_cost = [{
     'l2': 10.0,
     'alpha': 1e-5,
     'ramp_option': RAMP_QUADRATIC,
-} for i in xrange(common['conditions'])]
+} for i in range(common['conditions'])]
 
 cost_tgt = np.zeros(6)
 cost_wt = np.array([0, 0, 0, 1, 0, 0])
@@ -138,7 +138,7 @@ algorithm['cost'] = [{
     'type': CostSum,
     'costs': [fk_cost[i], fk_cost_blocktouch, state_cost],
     'weights': [4.0, 1.0, 1.0],
-} for i in xrange(common['conditions'])]
+} for i in range(common['conditions'])]
 
 
 algorithm['dynamics'] = {
