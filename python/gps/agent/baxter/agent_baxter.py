@@ -50,11 +50,10 @@ class AgentBaxter(Agent):
 
         self.limb = self._hyperparams['limb']
 
-        self.arm = BaxterArm(self.limb, self.x0)
+        self.arm = BaxterArm(self.limb, self.x0, self._hyperparams['openedAngle'], self._hyperparams['closedAngle'])
         rospy.on_shutdown(self.arm.clean_shutdown)
 
     def sample(self, policy, condition, verbose=True, save=True, noisy=True):
-        print("sample function:")
 
         self.arm.reset_arm()
         initial_state = self.arm.get_state()

@@ -61,6 +61,7 @@ class TfPolicy(Policy):
         if noise is None:
             u = action_mean
         else:
+            print(action_mean, self.chol_pol_covar, noise)
             u = action_mean + self.chol_pol_covar.T.dot(noise)
         return u[0]  # the DAG computations are batched by default, but we use batch size 1.
 
