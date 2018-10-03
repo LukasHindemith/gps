@@ -8,9 +8,12 @@ import numpy as np
 
 from gps import __file__ as gps_filepath
 from gps.agent.baxter.agent_baxter import AgentBaxter
+from gps.agent.baxter.shapesorter_world import ShapesorterWorld
 from gps.algorithm.cost.cost_state import CostState
 from gps.algorithm.cost.cost_action import CostAction
+from gps.algorithm.cost.cost_fk import CostFK
 from gps.algorithm.cost.cost_sum import CostSum
+from gps.algorithm.cost.cost_utils import RAMP_LINEAR, RAMP_FINAL_ONLY
 from gps.algorithm.algorithm_traj_opt import AlgorithmTrajOpt
 from gps.algorithm.dynamics.dynamics_lr_prior import DynamicsLRPrior
 from gps.algorithm.dynamics.dynamics_prior_gmm import DynamicsPriorGMM
@@ -19,26 +22,23 @@ from gps.algorithm.policy.lin_gauss_init import init_lqr
 from gps.algorithm.policy.policy_prior_gmm import PolicyPriorGMM
 from gps.gui.config import generate_experiment_info
 
-from gps.proto.gps_pb2 import JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS, ACTION, DOOR_ANGLE, IR_RANGE
+from gps.proto.gps_pb2 import JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS, ACTION
 
 SENSOR_DIMS = {
     JOINT_ANGLES: 7,
     JOINT_VELOCITIES: 7,
-    #END_EFFECTOR_POINTS: 3,
-    DOOR_ANGLE: 1,
-    IR_RANGE: 1,
+    END_EFFECTOR_POINTS: 7,
     ACTION: 7,
 }
 
 BASE_DIR = '/'.join(str.split(gps_filepath, '/')[:-2])
-EXP_DIR = BASE_DIR + '/../experiments/baxter_example/'
+EXP_DIR = BASE_DIR + '/../experiments/baxter_shapesorter/'
 
 common = {
     'experiment_name': 'my_experiment' + '_' + \
             datetime.strftime(datetime.now(), '%m-%d-%y_%H-%M'),
     'experiment_dir': EXP_DIR,
     'data_files_dir': EXP_DIR + 'data_files/',
-    'target_filename': EXP_DIR + 'target.npz',
     'log_filename': EXP_DIR + 'log.txt',
     'conditions': 1,
 }
@@ -49,17 +49,18 @@ if not os.path.exists(common['data_files_dir']):
 
 agent = {
     'type': AgentBaxter,
-    'target_state': np.array([0.14764565083397108, 0.36355344672884304, 1.3721458147635026, 1.4595827196729712, -0.39193209130472323, -0.826815644670238, 0.25080585881926515]),
+    'world': ShapesorterWorld,
+    'joint_tgt': np.array([0.578310757032801, -0.6408204741391316, 0.5679563867145745, 1.5289953503247862, -0.6611457195786133, 0.7750437930791053, 2.3443061390858837]),
+    'ee_tgt': np.array([0.73935, -0.14308, -0.28568, 0.78045, 0.62497, 0.009567, 0.014423]),
     'dt': 0.05,
     'conditions': common['conditions'],
-    'x0': np.concatenate([[-0.5039126888203584, 0.35204859081970247, 0.9963205217315763, 1.1792477306869118, -3.049170311119231, -1.2517283229144975, 2.876597472482122],np.zeros(9)]),
-    'T': 100,
+    'x0': np.concatenate([[0.3643204371227858, -1.2394564766114142, 0.2676796474860047, 1.6923643042345826, -0.05483981316690354, 1.1075341288532687, 1.8852623883111734],np.zeros(14)]),
+    'T': 50,
     'sensor_dims': SENSOR_DIMS,
-    'state_include': [JOINT_ANGLES, JOINT_VELOCITIES, DOOR_ANGLE, IR_RANGE],
+    'state_include': [JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS],
     'obs_include': [],
     'limb': 'right',
-    'openedAngle': -72.77,
-    'closedAngle': -154.73,
+    'rate': 10,
 }
 
 
@@ -71,7 +72,7 @@ algorithm['init_traj_distr'] = {
     'type': init_lqr,
     'init_gains':  np.zeros(SENSOR_DIMS[ACTION]),
     'init_acc': np.zeros(SENSOR_DIMS[ACTION]),
-    'init_var': 0.003,
+    'init_var': 0.005,
     'stiffness': 0.001,
     'dt': agent['dt'],
     'T': agent['T'],
@@ -112,20 +113,62 @@ algorithm['cost'] = {
 }
 '''
 
+'''
 algorithm['cost'] = {
     'type': CostState,
     'data_types': {
-        DOOR_ANGLE: {
-            'wp': np.array([1.0]),
-            'target_state': np.array([0.0]),
+        JOINT_ANGLES: {
+            'wp': np.ones(7),
+            'target_state': agent['target_state'],
         },
-        IR_RANGE: {
-            'wp': np.array([1.0]),
-            'target_state': np.array([0.0]),
-        },
-
     },
 }
+'''
+'''
+algorithm['cost'] = {
+    'type': CostState,
+    'data_types': {
+        END_EFFECTOR_POINTS: {
+            'wp': np.ones(7),
+            'target_state': agent['ee_tgt'],
+        },
+    },
+    'l1': 1.0,
+    'l2': 0.0001,
+}
+'''
+
+
+action_cost = {
+    'type': CostAction,
+    'wu': np.ones(7),
+}
+
+fk_cost1 = {
+    'type': CostFK,
+    'target_end_effector': agent['ee_tgt'],
+    'wp': np.ones(SENSOR_DIMS[END_EFFECTOR_POINTS]),
+    'l1': 0.1,
+    'l2': 0.0001,
+    'ramp_option': RAMP_LINEAR,
+}
+
+fk_cost2 = {
+    'type': CostFK,
+    'target_end_effector': agent['ee_tgt'],
+    'wp': np.ones(SENSOR_DIMS[END_EFFECTOR_POINTS]),
+    'l1': 1.0,
+    'l2': 0.0,
+    'wp_final_multiplier': 10.0,  # Weight multiplier on final timestep.
+    'ramp_option': RAMP_FINAL_ONLY,
+}
+
+algorithm['cost'] = {
+    'type': CostSum,
+    'costs': [action_cost, fk_cost1, fk_cost2],
+    'weights': [1.0, 1.0, 1.0],
+}
+
 
 algorithm['dynamics'] = {
     'type': DynamicsLRPrior,

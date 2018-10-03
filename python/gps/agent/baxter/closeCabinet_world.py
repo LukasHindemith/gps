@@ -1,23 +1,27 @@
 import numpy as np
 import rospy
-from gps.proto.gps_pb2 import JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS, DOOR_ANGLE, IR_RANGE
+from gps.proto.gps_pb2 import JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS, DOOR_ANGLE, IR_RANGE, END_EFFECTOR_POINT_JACOBIANS
 import baxter_interface
 from baxter_interface import CHECK_VERSION
+
+from baxter_pykdl import baxter_kinematics
 
 from imu_ros.srv import *
 from sensor_msgs.msg import Range
 
 
-class BaxterArm():
+class CloseCabinetWorld():
 
-    def __init__(self, limb, x0, openedAngle, closedAngle):
+    def __init__(self, hyperparams):
 
         # create our limb instance
-        self._limb = baxter_interface.Limb(limb)
+        self._limb = baxter_interface.Limb(hyperparams['limb'])
         self._limb.set_joint_position_speed(0.1)
-        self.x0 = x0
-        self.openedAngle = abs(openedAngle)
-        self.closedAngle = abs(closedAngle)
+        self.x0 = hyperparams['x0']
+        self.openedAngle = abs(hyperparams['openedAngle'])
+        self.closedAngle = abs(hyperparams['closedAngle'])
+
+        self.kin = baxter_kinematics(hyperparams['limb'])
 
         # initialize parameters
         self._springs = dict()
@@ -31,7 +35,7 @@ class BaxterArm():
         self._rs.enable()
         print("Baxter arm running... ")
 
-        self._rate = rospy.Rate(10) #Hz, TODO: Pass this over Hyperparams!
+        self._rate = rospy.Rate(hyperparams['rate'])
 
     def run_next(self, action):
         """
@@ -83,11 +87,13 @@ class BaxterArm():
         range = np.clip(range, minRange, maxRange)
         # Normalize to 0-1
         range = (range - minRange) / (maxRange - minRange)
-        #print("range: {}, angle: {}".format(range, door_angle))
+
+        jacobian = self.kin.jacobian()
 
         state = { JOINT_ANGLES: current_angles,
                   JOINT_VELOCITIES: current_velocities,
-                  #END_EFFECTOR_POINTS: current_eepoints,
+                  END_EFFECTOR_POINTS: current_eepoints,
+                  END_EFFECTOR_POINT_JACOBIANS: jacobian,
                   DOOR_ANGLE: np.array([door_angle]),
                   IR_RANGE: np.array([range])}
         return state

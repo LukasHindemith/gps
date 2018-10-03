@@ -12,7 +12,6 @@ from gps.agent.config import AGENT_BAXTER
 from gps.sample.sample_list import SampleList
 from gps.sample.sample import Sample
 from gps.proto.gps_pb2 import ACTION
-from gps.agent.baxter.baxter_arm import BaxterArm
 
 try:
     from gps.algorithm.policy.tf_policy import TfPolicy
@@ -50,13 +49,14 @@ class AgentBaxter(Agent):
 
         self.limb = self._hyperparams['limb']
 
-        self.arm = BaxterArm(self.limb, self.x0, self._hyperparams['openedAngle'], self._hyperparams['closedAngle'])
-        rospy.on_shutdown(self.arm.clean_shutdown)
+        self._world = self._hyperparams['world'](self._hyperparams)
+
+        rospy.on_shutdown(self._world.clean_shutdown)
 
     def sample(self, policy, condition, verbose=True, save=True, noisy=True):
 
-        self.arm.reset_arm()
-        initial_state = self.arm.get_state()
+        self._world.reset_arm()
+        initial_state = self._world.get_state()
         new_sample = self._init_sample(initial_state)
         U = np.zeros([self.T, self.dU])
 
@@ -71,8 +71,8 @@ class AgentBaxter(Agent):
             obs_t = new_sample.get_obs(t=t)
             U[t,:] = policy.act(X_t, obs_t, t, noise[t,:])
             if (t+1) < self.T:
-                self.arm.run_next(U[t, :])
-                current_state = self.arm.get_state()
+                self._world.run_next(U[t, :])
+                current_state = self._world.get_state()
                 self._set_sample(new_sample, current_state, t)
         new_sample.set(ACTION, U)
         if save:

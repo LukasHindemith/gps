@@ -225,7 +225,7 @@ class PygameFramework(framework.FrameworkBase):
         self.screen.fill((0, 0, 0))
 
             # Run the simulation loop
-        self.SimulationLoop([0, 0, 0])
+        self.SimulationLoop([0, 0, 0, 0, 0, 0, 0])
 
         if GUIEnabled and self.settings.drawMenu:
             self.gui_app.paint(self.screen)
