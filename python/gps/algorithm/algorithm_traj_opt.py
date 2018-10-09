@@ -11,10 +11,10 @@ LOGGER = logging.getLogger(__name__)
 
 class AlgorithmTrajOpt(Algorithm):
     """ Sample-based trajectory optimization. """
-    def __init__(self, hyperparams):
-        Algorithm.__init__(self, hyperparams)
+    def __init__(self, hyperparams, base_dir):
+        Algorithm.__init__(self, hyperparams, base_dir)
 
-    def iteration(self, sample_lists):
+    def iteration(self, sample_lists, iteration_num):
         """
         Run iteration of LQR.
         Args:
@@ -22,11 +22,13 @@ class AlgorithmTrajOpt(Algorithm):
         """
         for m in range(self.M):
             self.cur[m].sample_list = sample_lists[m]
+            for i, sample in enumerate(self.cur[m].sample_list):
+                np.savetxt("{}/update{}_sample{}_trajectory.txt".format(self._base_dir, iteration_num, i), sample.get_U())
 
         # Update dynamics model using all samples.
         self._update_dynamics()
 
-        self._update_step_size()  # KL Divergence step size.
+        self._update_step_size(iteration_num)  # KL Divergence step size.
 
         # Run inner loop to compute new policies.
         for _ in range(self._hyperparams['inner_iterations']):
@@ -34,11 +36,11 @@ class AlgorithmTrajOpt(Algorithm):
 
         self._advance_iteration_variables()
 
-    def _update_step_size(self):
+    def _update_step_size(self, iteration_num):
         """ Evaluate costs on samples, and adjust the step size. """
         # Evaluate cost function for all conditions and samples.
         for m in range(self.M):
-            self._eval_cost(m)
+            self._eval_cost(m, iteration_num)
 
         # Adjust step size relative to the previous iteration.
         for m in range(self.M):

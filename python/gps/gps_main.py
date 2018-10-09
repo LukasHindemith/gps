@@ -49,7 +49,7 @@ class GPSMain(object):
         self.gui = GPSTrainingGUI(config['common']) if config['gui_on'] else None
 
         config['algorithm']['agent'] = self.agent
-        self.algorithm = config['algorithm']['type'](config['algorithm'])
+        self.algorithm = config['algorithm']['type'](config['algorithm'], config['common']['data_files_dir'])
 
     def run(self, itr_load=None):
         """
@@ -210,7 +210,7 @@ class GPSMain(object):
         if self.gui:
             self.gui.set_status_text('Calculating.')
             self.gui.start_display_calculating()
-        self.algorithm.iteration(sample_lists)
+        self.algorithm.iteration(sample_lists, itr)
         if self.gui:
             self.gui.stop_display_calculating()
 

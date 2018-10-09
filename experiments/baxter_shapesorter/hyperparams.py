@@ -50,8 +50,7 @@ if not os.path.exists(common['data_files_dir']):
 agent = {
     'type': AgentBaxter,
     'world': ShapesorterWorld,
-    'joint_tgt': np.array([0.578310757032801, -0.6408204741391316, 0.5679563867145745, 1.5289953503247862, -0.6611457195786133, 0.7750437930791053, 2.3443061390858837]),
-    'ee_tgt': np.array([0.73935, -0.14308, -0.28568, 0.78045, 0.62497, 0.009567, 0.014423]),
+    'ee_tgt': np.array([0.7393028527033758, -0.14282140960308415, -0.26466171209831924, 0.7543105321666994, 0.6561052355532673, 0.014279957411678743, -0.018374541036531588]),
     'dt': 0.05,
     'conditions': common['conditions'],
     'x0': np.concatenate([[0.3643204371227858, -1.2394564766114142, 0.2676796474860047, 1.6923643042345826, -0.05483981316690354, 1.1075341288532687, 1.8852623883111734],np.zeros(14)]),
@@ -124,7 +123,7 @@ algorithm['cost'] = {
     },
 }
 '''
-'''
+
 algorithm['cost'] = {
     'type': CostState,
     'data_types': {
@@ -135,23 +134,27 @@ algorithm['cost'] = {
     },
     'l1': 1.0,
     'l2': 0.0001,
+    'ramp_option': RAMP_LINEAR,
+    'wp_final_multiplier': 10.0,
 }
-'''
+
 
 
 action_cost = {
     'type': CostAction,
-    'wu': np.ones(7),
+    'wu': np.array([0.001,0.001,0.001,0.001,0.001,0.001,0.001]),
 }
-
-fk_cost1 = {
+'''
+algorithm['cost'] = {
     'type': CostFK,
     'target_end_effector': agent['ee_tgt'],
     'wp': np.ones(SENSOR_DIMS[END_EFFECTOR_POINTS]),
-    'l1': 0.1,
+    'l1': 1.0,
     'l2': 0.0001,
+    'alpha': 1.0,
     'ramp_option': RAMP_LINEAR,
 }
+'''
 
 fk_cost2 = {
     'type': CostFK,
@@ -159,16 +162,18 @@ fk_cost2 = {
     'wp': np.ones(SENSOR_DIMS[END_EFFECTOR_POINTS]),
     'l1': 1.0,
     'l2': 0.0,
+    'alpha': 1.0,
     'wp_final_multiplier': 10.0,  # Weight multiplier on final timestep.
     'ramp_option': RAMP_FINAL_ONLY,
 }
 
+'''
 algorithm['cost'] = {
     'type': CostSum,
-    'costs': [action_cost, fk_cost1, fk_cost2],
-    'weights': [1.0, 1.0, 1.0],
+    'costs': [action_cost, fk_cost1],
+    'weights': [1.0, 1.0],
 }
-
+'''
 
 algorithm['dynamics'] = {
     'type': DynamicsLRPrior,

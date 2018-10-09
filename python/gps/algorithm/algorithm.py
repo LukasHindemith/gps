@@ -19,10 +19,12 @@ class Algorithm(object):
     """ Algorithm superclass. """
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, base_dir):
         config = copy.deepcopy(ALG)
         config.update(hyperparams)
         self._hyperparams = config
+        self._base_dir = base_dir
+        self.allCosts = []
 
         if 'train_conditions' in hyperparams:
             self._cond_idx = hyperparams['train_conditions']
@@ -68,18 +70,18 @@ class Algorithm(object):
         )
         if type(hyperparams['cost']) == list:
             self.cost = [
-                hyperparams['cost'][i]['type'](hyperparams['cost'][i])
+                hyperparams['cost'][i]['type'](hyperparams['cost'][i], self._base_dir)
                 for i in range(self.M)
             ]
         else:
             self.cost = [
-                hyperparams['cost']['type'](hyperparams['cost'])
+                hyperparams['cost']['type'](hyperparams['cost'], self._base_dir)
                 for _ in range(self.M)
             ]
         self.base_kl_step = self._hyperparams['kl_step']
 
     @abc.abstractmethod
-    def iteration(self, sample_list):
+    def iteration(self, sample_list, iteration_num):
         """ Run iteration of the algorithm. """
         raise NotImplementedError("Must be implemented in subclass")
 
@@ -126,7 +128,7 @@ class Algorithm(object):
             self.new_traj_distr[cond], self.cur[cond].eta = \
                     self.traj_opt.update(cond, self)
 
-    def _eval_cost(self, cond):
+    def _eval_cost(self, cond, iteration_num):
         """
         Evaluate costs for all samples for a condition.
         Args:
@@ -144,7 +146,7 @@ class Algorithm(object):
         for n in range(N):
             sample = self.cur[cond].sample_list[n]
             # Get costs.
-            l, lx, lu, lxx, luu, lux = self.cost[cond].eval(sample)
+            l, lx, lu, lxx, luu, lux = self.cost[cond].eval(sample, iteration_num, n)
             cc[n, :] = l
             cs[n, :] = l
 
@@ -172,6 +174,8 @@ class Algorithm(object):
         self.cur[cond].traj_info.Cm = np.mean(Cm, 0)  # Quadratic term (matrix).
 
         self.cur[cond].cs = cs  # True value of cost.
+        self.allCosts.append(np.sum(cs, axis=1))
+        np.savetxt("{}/costs.txt".format(self._base_dir), self.allCosts)
 
     def _advance_iteration_variables(self):
         """

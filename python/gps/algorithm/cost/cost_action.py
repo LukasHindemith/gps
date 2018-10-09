@@ -9,12 +9,12 @@ from gps.algorithm.cost.cost import Cost
 
 class CostAction(Cost):
     """ Computes torque penalties. """
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, base_dir):
         config = copy.deepcopy(COST_ACTION)
         config.update(hyperparams)
-        Cost.__init__(self, config)
+        Cost.__init__(self, config, base_dir)
 
-    def eval(self, sample):
+    def eval(self, sample, iteration_num, sample_num):
         """
         Evaluate cost function and derivatives on a sample.
         Args:

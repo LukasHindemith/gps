@@ -94,6 +94,7 @@ algorithm['cost'] = {
     'weights': [1.0, 1.0],
 }
 
+
 algorithm['dynamics'] = {
     'type': DynamicsLRPrior,
     'regularization': 1e-6,

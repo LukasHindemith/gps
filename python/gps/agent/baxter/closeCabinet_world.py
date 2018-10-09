@@ -4,8 +4,6 @@ from gps.proto.gps_pb2 import JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINT
 import baxter_interface
 from baxter_interface import CHECK_VERSION
 
-from baxter_pykdl import baxter_kinematics
-
 from imu_ros.srv import *
 from sensor_msgs.msg import Range
 
@@ -20,8 +18,6 @@ class CloseCabinetWorld():
         self.x0 = hyperparams['x0']
         self.openedAngle = abs(hyperparams['openedAngle'])
         self.closedAngle = abs(hyperparams['closedAngle'])
-
-        self.kin = baxter_kinematics(hyperparams['limb'])
 
         # initialize parameters
         self._springs = dict()
@@ -88,12 +84,9 @@ class CloseCabinetWorld():
         # Normalize to 0-1
         range = (range - minRange) / (maxRange - minRange)
 
-        jacobian = self.kin.jacobian()
-
         state = { JOINT_ANGLES: current_angles,
                   JOINT_VELOCITIES: current_velocities,
                   END_EFFECTOR_POINTS: current_eepoints,
-                  END_EFFECTOR_POINT_JACOBIANS: jacobian,
                   DOOR_ANGLE: np.array([door_angle]),
                   IR_RANGE: np.array([range])}
         return state

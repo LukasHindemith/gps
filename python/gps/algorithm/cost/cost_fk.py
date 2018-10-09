@@ -15,12 +15,12 @@ class CostFK(Cost):
     Forward kinematics cost function. Used for costs involving the end
     effector position.
     """
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, base_dir):
         config = copy.deepcopy(COST_FK)
         config.update(hyperparams)
-        Cost.__init__(self, config)
+        Cost.__init__(self, config, base_dir)
 
-    def eval(self, sample):
+    def eval(self, sample, iteration_num, sample_num):
         """
         Evaluate forward kinematics (end-effector penalties) cost.
         Temporary note: This implements the 'joint' penalty type from
@@ -50,11 +50,16 @@ class CostFK(Cost):
         # Choose target.
         tgt = self._hyperparams['target_end_effector']
         pt = sample.get(END_EFFECTOR_POINTS)
+        _, dim_sensor = pt.shape
         dist = pt - tgt
+        np.savetxt("{}/update{}_sample{}_EEPoint.txt".format(self._base_dir, iteration_num, sample_num), np.array(dist))
+
         # TODO - These should be partially zeros so we're not double
         #        counting.
         #        (see pts_jacobian_only in matlab costinfos code)
-        jx = sample.get(END_EFFECTOR_POINT_JACOBIANS)
+
+        #jx = sample.get(END_EFFECTOR_POINT_JACOBIANS)
+        jx = np.tile(np.eye(dim_sensor), [T, 1, 1])
 
         # Evaluate penalty term. Use estimated Jacobians and no higher
         # order terms.
@@ -63,6 +68,7 @@ class CostFK(Cost):
             wp, dist, jx, jxx_zeros, self._hyperparams['l1'],
             self._hyperparams['l2'], self._hyperparams['alpha']
         )
+
         # Add to current terms.
         sample.agent.pack_data_x(lx, ls, data_types=[JOINT_ANGLES])
         sample.agent.pack_data_x(lxx, lss,

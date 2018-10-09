@@ -7,24 +7,24 @@ from gps.algorithm.cost.cost import Cost
 
 class CostSum(Cost):
     """ A wrapper cost function that adds other cost functions. """
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, base_dir):
         config = copy.deepcopy(COST_SUM)
         config.update(hyperparams)
-        Cost.__init__(self, config)
+        Cost.__init__(self, config, base_dir)
 
         self._costs = []
         self._weights = self._hyperparams['weights']
 
         for cost in self._hyperparams['costs']:
-            self._costs.append(cost['type'](cost))
+            self._costs.append(cost['type'](cost, base_dir))
 
-    def eval(self, sample):
+    def eval(self, sample, iteration_num, sample_num):
         """
         Evaluate cost function and derivatives.
         Args:
             sample:  A single sample
         """
-        l, lx, lu, lxx, luu, lux = self._costs[0].eval(sample)
+        l, lx, lu, lxx, luu, lux = self._costs[0].eval(sample, iteration_num, sample_num)
 
         # Compute weighted sum of each cost value and derivatives.
         weight = self._weights[0]
@@ -35,7 +35,7 @@ class CostSum(Cost):
         luu = luu * weight
         lux = lux * weight
         for i in range(1, len(self._costs)):
-            pl, plx, plu, plxx, pluu, plux = self._costs[i].eval(sample)
+            pl, plx, plu, plxx, pluu, plux = self._costs[i].eval(sample, iteration_num, sample_num)
             weight = self._weights[i]
             l = l + pl * weight
             lx = lx + plx * weight

@@ -54,14 +54,14 @@ agent = {
     'target_state': np.array([0.14764565083397108, 0.36355344672884304, 1.3721458147635026, 1.4595827196729712, -0.39193209130472323, -0.826815644670238, 0.25080585881926515]),
     'dt': 0.05,
     'conditions': common['conditions'],
-    'x0': np.concatenate([[-0.5039126888203584, 0.35204859081970247, 0.9963205217315763, 1.1792477306869118, -3.049170311119231, -1.2517283229144975, 2.876597472482122],np.zeros(9)]),
+    'x0': np.concatenate([[-0.381961216183468, 0.3336408213650775, 1.270519587566094, 0.9955535313376335, -0.23239808936464018, 1.4289031039152629, -0.15224759319762732],np.zeros(9)]),
     'T': 100,
     'sensor_dims': SENSOR_DIMS,
     'state_include': [JOINT_ANGLES, JOINT_VELOCITIES, DOOR_ANGLE, IR_RANGE],
     'obs_include': [],
     'limb': 'right',
-    'openedAngle': -72.77,
-    'closedAngle': -154.73,
+    'openedAngle': -69.54,
+    'closedAngle': -151.38,
     'rate': 10,
 }
 
@@ -75,7 +75,7 @@ algorithm['init_traj_distr'] = {
     'init_gains':  np.zeros(SENSOR_DIMS[ACTION]),
     'init_acc': np.zeros(SENSOR_DIMS[ACTION]),
     'init_var': 0.003,
-    'stiffness': 0.001,
+    'stiffness': 0.01,
     'dt': agent['dt'],
     'T': agent['T'],
 }
@@ -126,9 +126,7 @@ algorithm['cost'] = {
             'wp': np.array([1.0]),
             'target_state': np.array([0.0]),
         },
-    },
-    'l1': 1.0,
-    'l2': 0.0001,
+    }
 }
 
 algorithm['dynamics'] = {

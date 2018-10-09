@@ -10,12 +10,12 @@ from gps.algorithm.cost.cost_utils import evall1l2term, get_ramp_multiplier
 
 class CostState(Cost):
     """ Computes l1/l2 distance to a fixed target state. """
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, base_dir):
         config = copy.deepcopy(COST_STATE)
         config.update(hyperparams)
-        Cost.__init__(self, config)
+        Cost.__init__(self, config, base_dir)
 
-    def eval(self, sample):
+    def eval(self, sample, iteration_num, sample_num):
         """
         Evaluate cost function and derivatives on a sample.
         Args:
@@ -46,6 +46,7 @@ class CostState(Cost):
             wp = wp * np.expand_dims(wpm, axis=-1)
             # Compute state penalty.
             dist = x - tgt
+            np.savetxt("{}/update{}_sample{}_{}.txt".format(self._base_dir, iteration_num, sample_num, data_type), np.array(dist))
 
             # Evaluate penalty term.
             l, ls, lss = evall1l2term(

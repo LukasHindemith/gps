@@ -1,11 +1,10 @@
 """ This file defines an environment for the Box2D 2 Link Arm simulator. """
 import Box2D as b2
 import numpy as np
-from framework import Framework
+from gps.agent.box2d.framework import Framework
 from gps.agent.box2d.settings import fwSettings
 from gps.proto.gps_pb2 import JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS
 
-print(Framework)
 
 class ArmWorld(Framework):
     """ This class defines the 2 Link Arm and its environment."""

@@ -313,6 +313,8 @@ class GPSTrainingGUI(object):
         each condition the mean cost over samples, step size, linear Guassian
         controller entropies, and initial/final KL divergences for BADMM.
         """
+
+        np.savetxt("{}/update{}_costs.txt".format(self._hyperparams['data_files_dir'], itr), costs)
         avg_cost = np.mean(costs)
         if pol_sample_lists is not None:
             test_idx = algorithm._hyperparams['test_conditions']

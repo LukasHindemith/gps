@@ -75,11 +75,11 @@ class ShapesorterWorld():
         current_eepoints = np.array([tmp_ee_pos.x, tmp_ee_pos.y, tmp_ee_pos.z, tmp_ee_orient.x, tmp_ee_orient.y, tmp_ee_orient.z, tmp_ee_orient.w])
 
         jacobian = self.kin.jacobian()
-
+        #jacobian = np.swapaxes(jacobian, 0, 1)
         state = { JOINT_ANGLES: current_angles,
                   JOINT_VELOCITIES: current_velocities,
                   END_EFFECTOR_POINTS: current_eepoints,
-                  END_EFFECTOR_POINT_JACOBIANS: jacobian,}
+                  END_EFFECTOR_POINT_JACOBIANS: jacobian}
         return state
 
     def getIMUAngle(self):

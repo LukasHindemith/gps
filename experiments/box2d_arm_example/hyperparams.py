@@ -46,7 +46,7 @@ agent = {
     'type': AgentBox2D,
     'target_state' : np.array([0, 0]),
     'world' : ArmWorld,
-    'render' : True,
+    'render' : False,
     'x0': np.array([0.75*np.pi, 0.5*np.pi, 0, 0, 0, 0, 0]),
     'rk': 0,
     'dt': 0.05,
@@ -75,6 +75,7 @@ algorithm['init_traj_distr'] = {
     'T': agent['T'],
 }
 
+'''
 action_cost = {
     'type': CostAction,
     'wu': np.array([1, 1])
@@ -88,12 +89,26 @@ state_cost = {
             'target_state': agent["target_state"],
         },
     },
+    'wp_final_multiplier': 10.0,
 }
 
 algorithm['cost'] = {
     'type': CostSum,
     'costs': [action_cost, state_cost],
     'weights': [1e-5, 1.0],
+}
+'''
+
+
+algorithm['cost'] = {
+    'type': CostState,
+    'data_types' : {
+        JOINT_ANGLES: {
+            'wp': np.array([1, 1]),
+            'target_state': agent["target_state"],
+        },
+    },
+    'wp_final_multiplier': 10.0,
 }
 
 algorithm['dynamics'] = {
@@ -114,12 +129,12 @@ algorithm['traj_opt'] = {
 algorithm['policy_opt'] = {}
 
 config = {
-    'iterations': 10,
+    'iterations': 20,
     'num_samples': 5,
     'verbose_trials': 5,
     'common': common,
     'agent': agent,
-    'gui_on': True,
+    'gui_on': False,
     'algorithm': algorithm,
 }
 
