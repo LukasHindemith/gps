@@ -54,7 +54,7 @@ class PolicyOptCaffe(PolicyOpt):
         solver_param.random_seed = self._hyperparams['random_seed']
 
         # Pass in net parameter either by filename or protostring.
-        if isinstance(self._hyperparams['network_model'], basestring):
+        if isinstance(self._hyperparams['network_model'], str):
             self.solver = caffe.get_solver(self._hyperparams['network_model'])
         else:
             network_arch_params = self._hyperparams['network_arch_params']
@@ -150,20 +150,20 @@ class PolicyOptCaffe(PolicyOpt):
         batches_per_epoch = np.floor(N*T / self.batch_size)
         idx = range(N*T)
         average_loss = 0
-        np.random.shuffle(idx)
+        np.random.shuffle(list(idx))
         for i in range(self._hyperparams['iterations']):
             # Load in data for this batch.
             start_idx = int(i * self.batch_size %
                             (batches_per_epoch * self.batch_size))
             idx_i = idx[start_idx:start_idx+self.batch_size]
-            self.solver.net.blobs[blob_names[0]].data[:] = obs[idx_i]
-            self.solver.net.blobs[blob_names[1]].data[:] = tgt_mu[idx_i]
-            self.solver.net.blobs[blob_names[2]].data[:] = tgt_prc[idx_i]
+            self.solver.net.blobs[list(blob_names)[0]].data[:] = obs[idx_i]
+            self.solver.net.blobs[list(blob_names)[1]].data[:] = tgt_mu[idx_i]
+            self.solver.net.blobs[list(blob_names)[2]].data[:] = tgt_prc[idx_i]
 
             self.solver.step(1)
 
             # To get the training loss:
-            train_loss = self.solver.net.blobs[blob_names[-1]].data
+            train_loss = self.solver.net.blobs[list(blob_names)[-1]].data
             average_loss += train_loss
             if (i+1) % 500 == 0:
                 LOGGER.debug('Caffe iteration %d, average loss %f',
@@ -209,12 +209,12 @@ class PolicyOptCaffe(PolicyOpt):
         for i in range(N):
             for t in range(T):
                 # Feed in data.
-                self.solver.test_nets[0].blobs[blob_names[0]].data[:] = \
+                self.solver.test_nets[0].blobs[list(blob_names)[0]].data[:] = \
                         obs[i, t]
 
                 # Assume that the first output blob is what we want.
                 output[i, t, :] = \
-                        self.solver.test_nets[0].forward().values()[0][0]
+                        list(self.solver.test_nets[0].forward().values())[0][0]
 
         pol_sigma = np.tile(np.diag(self.var), [N, T, 1, 1])
         pol_prec = np.tile(np.diag(1.0 / self.var), [N, T, 1, 1])

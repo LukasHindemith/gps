@@ -1,6 +1,6 @@
 import numpy as np
 import rospy
-from gps.proto.gps_pb2 import JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS, DOOR_ANGLE, IR_RANGE
+from gps.proto.gps_pb2 import JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS, SPARSE_COST
 import baxter_interface
 from baxter_interface import CHECK_VERSION
 
@@ -8,20 +8,14 @@ from imu_ros.srv import *
 from sensor_msgs.msg import Range
 
 
-class CloseCabinetWorld():
+class BIACSparse_World():
 
     def __init__(self, hyperparams):
 
         # create our limb instance
         self._limb = baxter_interface.Limb(hyperparams['limb'])
-        self._limb.set_joint_position_speed(0.1)
+        #self._limb.set_joint_position_speed(0.1)
         self.x0 = hyperparams['x0']
-        self.openedAngle = abs(hyperparams['openedAngle'])
-
-        if hyperparams['closedAngle'] > 0:
-            self.closedAngle = abs(hyperparams['closedAngle']-360)
-        else:
-            self.closedAngle = abs(hyperparams['closedAngle'])
 
         # initialize parameters
         self._springs = dict()
@@ -74,36 +68,32 @@ class CloseCabinetWorld():
         tmp_ee_pose = self._limb.endpoint_pose()['position']
         current_eepoints = np.array([tmp_ee_pose.x, tmp_ee_pose.y, tmp_ee_pose.z])
 
-        # Calculate Angle-state
-        tmpAngle = self.getIMUAngle()
-        if tmpAngle > 0:
-            tmpAngle = (tmpAngle-360)
-        door_angle = (abs(tmpAngle)-self.closedAngle)/(self.openedAngle-self.closedAngle)
-        door_angle = np.clip(door_angle, 0.0, 1.0)
-        # Calculate Range-state
-        minRange = 0.004
-        maxRange = 0.4
-        msg = rospy.wait_for_message("/robot/range/{}_hand_range/state".format(self._limb.name), Range)
-        range = msg.range
-        range = np.clip(range, minRange, maxRange)
-        # Normalize to 0-1
-        range = (range - minRange) / (maxRange - minRange)
-
         state = { JOINT_ANGLES: current_angles,
                   JOINT_VELOCITIES: current_velocities,
-                  END_EFFECTOR_POINTS: current_eepoints,
-                  DOOR_ANGLE: np.array([door_angle]),
-                  IR_RANGE: np.array([range])}
+                  #END_EFFECTOR_POINTS: current_eepoints,
+                  SPARSE_COST: np.array([0])}
         return state
 
-    def getIMUAngle(self):
-        rospy.wait_for_service('get_angle')
-        try:
-            angleClient = rospy.ServiceProxy('get_angle', GetAngle)
-            data = angleClient()
-            return data.angle
-        except rospy.ServiceException as e:
-            print("Service call failed: {}".format(e))
+
+    def get_final_state(self):
+        """
+        Retrieves the current state of the arm
+        :return:
+        """
+        current_angles = np.fromiter(self._limb.joint_angles().values(), dtype=float)
+        current_velocities = np.fromiter(self._limb.joint_velocities().values(), dtype=float)
+        tmp_ee_pose = self._limb.endpoint_pose()['position']
+        current_eepoints = np.array([tmp_ee_pose.x, tmp_ee_pose.y, tmp_ee_pose.z])
+
+        reward = input("give reward between 1-5 stars: ")
+        while reward == "":
+            reward = input("give reward between 1-5 stars: ")
+        state = { JOINT_ANGLES: current_angles,
+                  JOINT_VELOCITIES: current_velocities,
+                  #END_EFFECTOR_POINTS: current_eepoints,
+                  SPARSE_COST: np.array([float(reward)])}
+
+        return state
 
     def clean_shutdown(self):
         """

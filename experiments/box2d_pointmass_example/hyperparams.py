@@ -45,7 +45,7 @@ agent = {
     'type': AgentBox2D,
     'target_state' : [5, 20, 0],
     "world" : PointMassWorld,
-    'render' : True,
+    'render' : False,
     'x0': [[0, 5, 0, 0, 0, 0]],
     'rk': 0,
     'dt': 0.05,
@@ -113,14 +113,15 @@ algorithm['traj_opt'] = {
 algorithm['policy_opt'] = {}
 
 config = {
-    'iterations': 10,
+    'iterations': 120,
     'num_samples': 5,
     'common': common,
     'verbose_trials': 0,
     'agent': agent,
-    'gui_on': True,
+    'gui_on': False,
     'algorithm': algorithm,
     'dQ': algorithm['init_traj_distr']['dQ'],
+    'random_seed': 9,
 }
 
 common['info'] = generate_experiment_info(config)

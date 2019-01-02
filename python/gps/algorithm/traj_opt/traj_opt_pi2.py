@@ -169,7 +169,6 @@ class TrajOptPI2(TrajOpt):
                 # max-likelihood and then taken to the power (1/covariance_damping).
                 if(self._covariance_damping is not None
                    and self._covariance_damping > 0.0):
-
                     mult = np.trace(np.dot(sp.linalg.inv(cov_old[t]),
                         cov_new[t])) / len(cov_old[t])
                     mult = np.power(mult, 1 / self._covariance_damping)

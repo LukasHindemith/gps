@@ -13,6 +13,7 @@ import argparse
 import threading
 import time
 import traceback
+import numpy as np
 
 # Add gps/python to path so that imports work.
 sys.path.append('/'.join(str.split(__file__, '/')[:-2]))
@@ -61,7 +62,6 @@ class GPSMain(object):
         """
         try:
             itr_start = self._initialize(itr_load)
-
             for itr in range(itr_start, self._hyperparams['iterations']):
                 for cond in self._train_idx:
                     for i in range(self._hyperparams['num_samples']):
@@ -72,12 +72,20 @@ class GPSMain(object):
                     for cond in self._train_idx
                 ]
 
-                # Clear agent samples.
-                self.agent.clear_samples()
-
                 self._take_iteration(itr, traj_sample_lists)
                 pol_sample_lists = self._take_policy_samples()
                 self._log_data(itr, traj_sample_lists, pol_sample_lists)
+
+                print("Mean sample of iteration: {}".format(itr))
+
+                pol = self.algorithm.cur[cond].traj_distr
+                self.agent.sample(
+                    pol, cond,
+                    verbose=(i < self._hyperparams['verbose_trials']),
+                    noisy=False
+                )
+                # Clear agent samples.
+                self.agent.clear_samples()
         except Exception as e:
             traceback.print_exception(*sys.exc_info())
         finally:
@@ -246,10 +254,12 @@ class GPSMain(object):
             pol_sample_lists: policy samples as SampleList object
         Returns: None
         """
+        costs = [np.mean(np.sum(self.algorithm.prev[m].cs, axis=1)) for m in range(self.algorithm.M)]
+        np.savetxt("{}/update{}_costs.txt".format(self._data_files_dir, itr), costs)
         if self.gui:
             self.gui.set_status_text('Logging data and updating GUI.')
             self.gui.update(itr, self.algorithm, self.agent,
-                traj_sample_lists, pol_sample_lists)
+                            traj_sample_lists, pol_sample_lists)
             self.gui.save_figure(
                 self._data_files_dir + ('figure_itr_%02d.png' % itr)
             )
@@ -295,6 +305,8 @@ def main():
                         help='silent debug print outs')
     parser.add_argument('-q', '--quit', action='store_true',
                         help='quit GUI automatically when finished')
+    parser.add_argument('-po', '--parameterOptimization', action='store_true',
+                        help='optimize parameters for the experiment.')
     args = parser.parse_args()
 
     exp_name = args.experiment
@@ -387,6 +399,36 @@ def main():
             plt.show()
         else:
             gps.test_policy(itr=current_itr, N=test_policy_N)
+
+    elif args.parameterOptimization:
+        import random
+        import numpy as np
+
+        for num_samples in [20, 30]:
+            for init_var in [5.0]:#[0.1, 1.0, 2.0, 3.0]:
+                for cov_damp in [2.0, 1.0, 0.5]:
+                    hyperparams.config['num_samples'] = num_samples
+                    hyperparams.config['iterations'] = int(600/num_samples)
+                    hyperparams.config['algorithm']['init_traj_distr']['init_var'] = init_var
+                    hyperparams.config['algorithm']['traj_opt']['covariance_damping'] = cov_damp
+                    for i in range(0, 10):
+                        opt_dir = "sam{}_var{}_covdamp{}/{}/".format(num_samples, init_var, cov_damp, i)
+                        hyperparams.config['common']['data_files_dir'] = hyperparams.config['common']['experiment_dir'] + opt_dir
+                        print(hyperparams.config['common']['data_files_dir'])
+                        try:
+                            os.makedirs(hyperparams.config['common']['data_files_dir'])
+                        except:
+                            pass
+                        seed = i
+                        random.seed(seed)
+                        np.random.seed(seed)
+                        try:
+                            del hyperparams.config['common']['train_conditions']
+                        except:
+                            pass
+                        gps = GPSMain(hyperparams.config, args.quit)
+                        gps.run(itr_load = resume_training_itr)
+
     else:
         import random
         import numpy as np

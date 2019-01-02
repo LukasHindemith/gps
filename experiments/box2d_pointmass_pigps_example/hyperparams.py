@@ -39,7 +39,7 @@ common = {
     'data_files_dir': EXP_DIR + 'data_files/',
     'target_filename': EXP_DIR + 'target.npz',
     'log_filename': EXP_DIR + 'log.txt',
-    'conditions': 4,
+    'conditions': 1,
 }
 
 if not os.path.exists(common['data_files_dir']):
@@ -47,14 +47,10 @@ if not os.path.exists(common['data_files_dir']):
 
 agent = {
     'type': AgentBox2D,
-    'target_state' : np.array([5, 20, 0]),
+    'target_state' : [5, 20, 0],
     "world" : PointMassWorld,
     'render' : False,
-    'x0': [np.array([0, 5, 0, 0, 0, 0]),
-           np.array([0, 10, 0, 0, 0, 0]),
-           np.array([10, 5, 0, 0, 0, 0]),
-           np.array([10, 10, 0, 0, 0, 0]),
-        ],
+    'x0': [[0, 5, 0, 0, 0, 0]],
     'rk': 0,
     'dt': 0.05,
     'substeps': 1,

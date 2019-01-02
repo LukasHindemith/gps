@@ -6,8 +6,7 @@ from datetime import datetime
 import numpy as np
 
 from gps import __file__ as gps_filepath
-from gps.agent.box2d.agent_box2d import AgentBox2D
-from gps.agent.box2d.big_arm_world import BigArmWorld
+from gps.agent.gym.agent_gym import AgentGym
 from gps.algorithm.algorithm_traj_opt import AlgorithmTrajOpt
 from gps.algorithm.cost.cost_state import CostState
 from gps.algorithm.cost.cost_action import CostAction
@@ -17,21 +16,23 @@ from gps.algorithm.dynamics.dynamics_prior_gmm import DynamicsPriorGMM
 from gps.algorithm.traj_opt.traj_opt_lqr_python import TrajOptLQRPython
 from gps.algorithm.policy.lin_gauss_init import init_lqr
 from gps.gui.config import generate_experiment_info
-from gps.proto.gps_pb2 import JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS, ACTION
+from gps.proto.gps_pb2 import CARPOSITION, CARVELOCITY, REWARD, END_EFFECTOR_POINTS, ACTION
 
 SENSOR_DIMS = {
-    JOINT_ANGLES: 7,
-    JOINT_VELOCITIES: 7,
+    CARPOSITION: 1,
+    CARVELOCITY: 1,
+    REWARD: 1,
     END_EFFECTOR_POINTS: 3,
-    ACTION: 7
+    ACTION: 1
 }
 
 BASE_DIR = '/'.join(str.split(gps_filepath, '/')[:-2])
-EXP_DIR = BASE_DIR + '/../experiments/box2d_big_arm_example/'
-#EXP_DIR = "/home/h1nd3mann/masterarbeit/results/big_arm_example/parameter_optimization/gps/"
+#EXP_DIR = BASE_DIR + '/../experiments/gym_car_example/'
+EXP_DIR = '/home/h1nd3mann/masterarbeit/results/mountaincar/parameter_optimization/gps/'
+
 
 common = {
-    'experiment_name': 'box2d_big_arm_example' + '_' + \
+    'experiment_name': 'gym_car_example' + '_' + \
             datetime.strftime(datetime.now(), '%m-%d-%y_%H-%M'),
     'experiment_dir': EXP_DIR,
     'data_files_dir': EXP_DIR + 'data_files/',
@@ -43,20 +44,20 @@ if not os.path.exists(common['data_files_dir']):
     os.makedirs(common['data_files_dir'])
 
 agent = {
-    'type': AgentBox2D,
-    'target_state': np.zeros(7),
-    'world': BigArmWorld,
+    'type': AgentGym,
+    'target_state': np.array([0.45]),
+    'env': 'MountainCarStatic-v0',
     'render': False,
-    'x0': np.concatenate([[0.75*np.pi, -0.1*np.pi, -0.1*np.pi, -0.1*np.pi, -0.1*np.pi, -0.1*np.pi, -0.1*np.pi],np.zeros(10)]),
+    'rate': 1000,
+    'x0': np.zeros(6),
     'rk': 0,
     'dt': 0.05,
-    'substeps': 1,
     'conditions': common['conditions'],
     'pos_body_idx': np.array([]),
     'pos_body_offset': np.array([]),
-    'T': 100,
+    'T': 500,
     'sensor_dims': SENSOR_DIMS,
-    'state_include': [JOINT_ANGLES, JOINT_VELOCITIES, END_EFFECTOR_POINTS],
+    'state_include': [CARPOSITION, CARVELOCITY, REWARD, END_EFFECTOR_POINTS],
     'obs_include': [],
 }
 
@@ -69,25 +70,25 @@ algorithm['init_traj_distr'] = {
     'type': init_lqr,
     'init_gains': np.zeros(SENSOR_DIMS[ACTION]),
     'init_acc': np.zeros(SENSOR_DIMS[ACTION]),
-    'init_var': 0.01,
-    'stiffness': 0.001,
+    'init_var': 1.0,
+    'stiffness': 0.01,
     'dt': agent['dt'],
     'T': agent['T'],
 }
 
-action_cost = {
-    'type': CostAction,
-    'wu': np.ones(7)
-}
-
-state_cost = {
+state_cost= {
     'type': CostState,
-    'data_types' : {
-        JOINT_ANGLES: {
-            'wp': np.ones(7),
+    'data_types': {
+        CARPOSITION: {
+            'wp': np.array([1]),
             'target_state': agent["target_state"],
         },
     },
+}
+
+action_cost = {
+    'type': CostAction,
+    'wu': np.array([1])
 }
 
 algorithm['cost'] = {
@@ -95,6 +96,7 @@ algorithm['cost'] = {
     'costs': [action_cost, state_cost],
     'weights': [1e-5, 1.0],
 }
+
 
 algorithm['dynamics'] = {
     'type': DynamicsLRPrior,
@@ -114,14 +116,14 @@ algorithm['traj_opt'] = {
 algorithm['policy_opt'] = {}
 
 config = {
-    'iterations': 200,
-    'num_samples': 3,
-    'verbose_trials': 5,
+    'iterations': 20,
+    'num_samples': 15,
+    'verbose_trials': 15,
     'common': common,
     'agent': agent,
     'gui_on': False,
     'algorithm': algorithm,
-    'random_seed': 9,
+    'random_seed': 3,
 }
 
 common['info'] = generate_experiment_info(config)

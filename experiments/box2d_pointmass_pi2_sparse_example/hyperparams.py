@@ -9,8 +9,8 @@ from gps import __file__ as gps_filepath
 from gps.agent.box2d.agent_box2d import AgentBox2D
 from gps.agent.box2d.point_mass_world import PointMassWorld
 from gps.algorithm.algorithm_traj_opt_pi2 import AlgorithmTrajOptPI2
-from gps.algorithm.cost.cost_state import CostState
-from gps.algorithm.cost.cost_action import CostAction
+from gps.algorithm.cost.cost_state_sparse import CostStateSparse
+from gps.algorithm.cost.cost_action_sparse import CostActionSparse
 from gps.algorithm.cost.cost_sum import CostSum
 from gps.algorithm.cost.cost_utils import RAMP_LINEAR, RAMP_QUADRATIC
 from gps.algorithm.dynamics.dynamics_lr_prior import DynamicsLRPrior
@@ -29,10 +29,10 @@ SENSOR_DIMS = {
 }
 
 BASE_DIR = '/'.join(str.split(gps_filepath, '/')[:-2])
-#EXP_DIR = BASE_DIR + '/../experiments/box2d_pointmass_pi2_example/'
-EXP_DIR = '/home/h1nd3mann/masterarbeit/results/point_mass_example/parameter_optimization/gps_pi2/'
+EXP_DIR = BASE_DIR + '/../experiments/box2d_pointmass_pi2_sparse_example/'
+
 common = {
-    'experiment_name': 'box2d_pointmass_pi2_example' + '_' + \
+    'experiment_name': 'box2d_pointmass_pi2_sparse_example' + '_' + \
             datetime.strftime(datetime.now(), '%m-%d-%y_%H-%M'),
     'experiment_dir': EXP_DIR,
     'data_files_dir': EXP_DIR + 'data_files/',
@@ -70,7 +70,7 @@ algorithm = {
 
 algorithm['init_traj_distr'] = {
     'type': init_pd,
-    'init_var': 1.0,
+    'init_var': 5.0,
     'pos_gains': 0.0,
     'dQ': SENSOR_DIMS[ACTION],
     'dt': agent['dt'],
@@ -78,12 +78,12 @@ algorithm['init_traj_distr'] = {
 }
 
 action_cost = {
-    'type': CostAction,
+    'type': CostActionSparse,
     'wu': np.array([5e-5, 5e-5])
 }
 
 state_cost = {
-    'type': CostState,
+    'type': CostStateSparse,
     'data_types' : {
         END_EFFECTOR_POINTS: {
             'wp': np.ones(SENSOR_DIMS[END_EFFECTOR_POINTS]),
@@ -116,7 +116,7 @@ config = {
     'gui_on': False,
     'algorithm': algorithm,
     'dQ': algorithm['init_traj_distr']['dQ'],
-    'random_seed': 0,
+    'random_seed': 9,
 }
 
 common['info'] = generate_experiment_info(config)

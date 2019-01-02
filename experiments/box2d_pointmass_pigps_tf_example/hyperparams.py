@@ -1,4 +1,4 @@
-""" Hyperparameters for Box2d Point Mass task with PI2."""
+""" Hyperparameters for Box2d Point Mass task with PIGPS."""
 from __future__ import division
 
 import os.path
@@ -8,19 +8,22 @@ import numpy as np
 from gps import __file__ as gps_filepath
 from gps.agent.box2d.agent_box2d import AgentBox2D
 from gps.agent.box2d.point_mass_world import PointMassWorld
-from gps.algorithm.algorithm_traj_opt_pi2 import AlgorithmTrajOptPI2
+from gps.algorithm.algorithm_pigps import AlgorithmPIGPS
+from gps.algorithm.algorithm_pigps import AlgorithmMDGPS
 from gps.algorithm.cost.cost_state import CostState
 from gps.algorithm.cost.cost_action import CostAction
 from gps.algorithm.cost.cost_sum import CostSum
-from gps.algorithm.cost.cost_utils import RAMP_LINEAR, RAMP_QUADRATIC
+from gps.algorithm.policy_opt.policy_opt_tf import PolicyOptTf
 from gps.algorithm.dynamics.dynamics_lr_prior import DynamicsLRPrior
 from gps.algorithm.dynamics.dynamics_prior_gmm import DynamicsPriorGMM
+#from gps.algorithm.policy_opt.policy_opt_caffe import PolicyOptCaffe
 from gps.algorithm.traj_opt.traj_opt_pi2 import TrajOptPI2
+from gps.algorithm.policy.policy_prior import PolicyPrior
 from gps.algorithm.policy.lin_gauss_init import init_pd
 from gps.proto.gps_pb2 import END_EFFECTOR_POINTS, END_EFFECTOR_POINT_VELOCITIES, ACTION
 from gps.gui.config import generate_experiment_info
-
-
+from gps.algorithm.traj_opt.traj_opt_lqr_python import TrajOptLQRPython
+from gps.algorithm.policy_opt.tf_model_example import tf_network
 
 SENSOR_DIMS = {
     END_EFFECTOR_POINTS: 3,
@@ -29,10 +32,10 @@ SENSOR_DIMS = {
 }
 
 BASE_DIR = '/'.join(str.split(gps_filepath, '/')[:-2])
-#EXP_DIR = BASE_DIR + '/../experiments/box2d_pointmass_pi2_example/'
-EXP_DIR = '/home/h1nd3mann/masterarbeit/results/point_mass_example/parameter_optimization/gps_pi2/'
+EXP_DIR = BASE_DIR + '/../experiments/box2d_pointmass_pigps_tf_example/'
+
 common = {
-    'experiment_name': 'box2d_pointmass_pi2_example' + '_' + \
+    'experiment_name': 'box2d_pointmass_pigps_tf_example' + '_' + \
             datetime.strftime(datetime.now(), '%m-%d-%y_%H-%M'),
     'experiment_dir': EXP_DIR,
     'data_files_dir': EXP_DIR + 'data_files/',
@@ -49,7 +52,14 @@ agent = {
     'target_state' : [5, 20, 0],
     "world" : PointMassWorld,
     'render' : False,
-    'x0': [[0, 5, 0, 0, 0, 0]],
+    'x0': [[0,5,0,0,0,0]],
+    '''
+    'x0': [np.array([0, 5, 0, 0, 0, 0]),
+           np.array([0, 10, 0, 0, 0, 0]),
+           np.array([10, 5, 0, 0, 0, 0]),
+           np.array([10, 10, 0, 0, 0, 0]),
+        ],
+    '''
     'rk': 0,
     'dt': 0.05,
     'substeps': 1,
@@ -59,13 +69,15 @@ agent = {
     'T': 100,
     'sensor_dims': SENSOR_DIMS,
     'state_include': [END_EFFECTOR_POINTS, END_EFFECTOR_POINT_VELOCITIES],
-    'obs_include': [],
+    'obs_include': [END_EFFECTOR_POINTS, END_EFFECTOR_POINT_VELOCITIES],
     'smooth_noise_var': 3.0,
 }
 
 algorithm = {
-    'type': AlgorithmTrajOptPI2,
+    'type': AlgorithmPIGPS,
     'conditions': common['conditions'],
+    'policy_sample_mode': 'replace',
+    'sample_on_policy': True,
 }
 
 algorithm['init_traj_distr'] = {
@@ -105,18 +117,45 @@ algorithm['traj_opt'] = {
     'min_temperature': 0.001,
 }
 
-algorithm['policy_opt'] = {}
+'''
+algorithm['policy_opt'] = {
+    'type': PolicyOptCaffe,
+    'weights_file_prefix': EXP_DIR + 'policy',
+    'taiterations': 10000,
+    'network_arch_params': {
+        'n_layers': 2,
+        'dim_hidden': [20],
+    },
+}
+'''
+
+algorithm['policy_opt'] = {
+    'type': PolicyOptTf,
+    'network_params': {
+        'obs_include': [END_EFFECTOR_POINTS, END_EFFECTOR_POINT_VELOCITIES],
+        'obs_vector_data': [END_EFFECTOR_POINTS, END_EFFECTOR_POINT_VELOCITIES],
+        'sensor_dims': SENSOR_DIMS,
+    },
+    'network_model': tf_network,
+    'iterations': 1000,
+    'weights_file_prefix': EXP_DIR + 'policy',
+}
+
+
+algorithm['policy_prior'] = {
+    'type': PolicyPrior,
+}
 
 config = {
     'iterations': 20,
     'num_samples': 30,
     'common': common,
-    'verbose_trials': 0,
+    'verbose_trials': 1,
+    'verbose_policy_trials': 0,
     'agent': agent,
     'gui_on': False,
     'algorithm': algorithm,
-    'dQ': algorithm['init_traj_distr']['dQ'],
-    'random_seed': 0,
+    'random_seed': 9,
 }
 
 common['info'] = generate_experiment_info(config)

@@ -5,10 +5,10 @@ import numpy as np
 
 from gps.algorithm.cost.config import COST_STATE
 from gps.algorithm.cost.cost import Cost
-from gps.algorithm.cost.cost_utils import evall1l2term, get_ramp_multiplier
+from gps.algorithm.cost.cost_utils import evall1l2term_sparse, get_ramp_multiplier
 
 
-class CostState(Cost):
+class CostStateUser(Cost):
     """ Computes l1/l2 distance to a fixed target state. """
     def __init__(self, hyperparams, base_dir):
         config = copy.deepcopy(COST_STATE)
@@ -45,16 +45,23 @@ class CostState(Cost):
             )
             wp = wp * np.expand_dims(wpm, axis=-1)
             # Compute state penalty.
-            dist = x - tgt
+            dist = tgt - x
+            dist[:-1] = 0.0
             np.savetxt("{}/update{}_sample{}_{}_dists.txt".format(self._base_dir, iteration_num, sample_num, data_type), np.array(dist))
 
+            l = np.concatenate(dist)
+            ls = np.zeros((T, 1))
+            lss = np.zeros((T, 1, 1))
+
+            '''
             # Evaluate penalty term.
-            l, ls, lss = evall1l2term(
+            l, ls, lss = evall1l2term_sparse(
                 wp, dist, np.tile(np.eye(dim_sensor), [T, 1, 1]),
                 np.zeros((T, dim_sensor, dim_sensor, dim_sensor)),
                 self._hyperparams['l1'], self._hyperparams['l2'],
                 self._hyperparams['alpha']
             )
+            '''
 
             final_l += l
 

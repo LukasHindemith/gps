@@ -6,6 +6,7 @@ Path Integral Guided Policy Search. 2016. https://arxiv.org/abs/1610.00529.
 """
 import copy
 import logging
+import numpy as np
 
 from gps.algorithm.algorithm import Algorithm
 from gps.algorithm.algorithm_mdgps import AlgorithmMDGPS
@@ -21,12 +22,12 @@ class AlgorithmPIGPS(AlgorithmMDGPS):
     Sample-based joint policy learning and trajectory optimization with
     path integral guided policy search algorithm.
     """
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, base_dir):
         config = copy.deepcopy(ALG_PIGPS)
         config.update(hyperparams)
-        AlgorithmMDGPS.__init__(self, config)
+        AlgorithmMDGPS.__init__(self, config, base_dir)
 
-    def iteration(self, sample_lists):
+    def iteration(self, sample_lists, iteration_num):
         """
         Run iteration of PI-based guided policy search.
 
@@ -36,7 +37,9 @@ class AlgorithmPIGPS(AlgorithmMDGPS):
         # Store the samples and evaluate the costs.
         for m in range(self.M):
             self.cur[m].sample_list = sample_lists[m]
-            self._eval_cost(m)
+            for i, sample in enumerate(self.cur[m].sample_list):
+                np.savetxt("{}/update{}_sample{}_trajectory.txt".format(self._base_dir, iteration_num, i), sample.get_U())
+            self._eval_cost(m, iteration_num)
 
         # On the first iteration, need to catch policy up to init_traj_distr.
         if self.iteration_count == 0:

@@ -11,8 +11,7 @@ from gps.agent.agent_utils import generate_noise, setup
 from gps.agent.config import AGENT_BAXTER
 from gps.sample.sample_list import SampleList
 from gps.sample.sample import Sample
-from gps.proto.gps_pb2 import ACTION
-
+from gps.proto.gps_pb2 import ACTION, DOOR_ANGLE, SPARSE_COST
 try:
     from gps.algorithm.policy.tf_policy import TfPolicy
 except ImportError:  # user does not have tf installed.
@@ -55,16 +54,16 @@ class AgentBaxter(Agent):
 
     def sample(self, policy, condition, verbose=True, save=True, noisy=True):
 
-        self._world.reset_arm()
-        initial_state = self._world.get_state()
-        new_sample = self._init_sample(initial_state)
-        U = np.zeros([self.T, self.dU])
-
         # Generate noise.
         if noisy:
             noise = generate_noise(self.T, self.dU, self._hyperparams)
         else:
             noise = np.zeros((self.T, self.dU))
+
+        self._world.reset_arm()
+        initial_state = self._world.get_state()
+        new_sample = self._init_sample(initial_state)
+        U = np.zeros([self.T, self.dU])
 
         for t in range(self.T):
             X_t = new_sample.get_X(t=t)
@@ -72,8 +71,39 @@ class AgentBaxter(Agent):
             U[t,:] = policy.act(X_t, obs_t, t, noise[t,:])
             if (t+1) < self.T:
                 self._world.run_next(U[t, :])
-                current_state = self._world.get_state()
-                self._set_sample(new_sample, current_state, t)
+                if (t+2) < self.T:
+                    current_state = self._world.get_state()
+                    self._set_sample(new_sample, current_state, t)
+                else:
+                    self._world.reset_arm()
+                    current_state = self._world.get_final_state()
+                    self._set_sample(new_sample, current_state, t)
+                '''
+                if current_state[DOOR_ANGLE][0] < 0.05:
+                    print("break", current_state[DOOR_ANGLE][0])
+                    for t_left in range(self.T - t - 1):
+                        self._set_sample(new_sample, current_state, t + t_left)
+                    break
+                '''
+        while new_sample.get(SPARSE_COST)[-1] < 0.0:
+            print("replay sample!!!")
+            self._world.reset_arm()
+            initial_state = self._world.get_state()
+            new_sample = self._init_sample(initial_state)
+
+            for t in range(self.T):
+                X_t = new_sample.get_X(t=t)
+                obs_t = new_sample.get_obs(t=t)
+                if (t+1) < self.T:
+                    self._world.run_next(U[t,:])
+                    if (t+2) < self.T:
+                        current_state = self._world.get_state()
+                        self._set_sample(new_sample, current_state, t)
+                    else:
+                        self._world.reset_arm()
+                        current_state = self._world.get_final_state()
+                        self._set_sample(new_sample, current_state, t)
+
         new_sample.set(ACTION, U)
         if save:
             self._samples[condition].append(new_sample)

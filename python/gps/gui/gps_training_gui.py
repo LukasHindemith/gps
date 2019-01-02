@@ -314,13 +314,12 @@ class GPSTrainingGUI(object):
         controller entropies, and initial/final KL divergences for BADMM.
         """
 
-        np.savetxt("{}/update{}_costs.txt".format(self._hyperparams['data_files_dir'], itr), costs)
         avg_cost = np.mean(costs)
         if pol_sample_lists is not None:
             test_idx = algorithm._hyperparams['test_conditions']
             # pol_sample_lists is a list of singletons
             samples = [sl[0] for sl in pol_sample_lists]
-            pol_costs = [np.sum(algorithm.cost[idx].eval(s)[0])
+            pol_costs = [np.sum(algorithm.cost[idx].eval(s, itr, s)[0])
                     for s, idx in zip(samples, test_idx)]
             itr_data = '%3d | %8.2f %12.2f' % (itr, avg_cost, np.mean(pol_costs))
         else:

@@ -76,6 +76,10 @@ AGENT_BOX2D = {
     'render': True,
 }
 
+AGENT_GYM = {
+    'render': True,
+}
+
 AGENT_BAXTER = {
     'frequency':10,
     'end_effector_points':np.array([[]]),

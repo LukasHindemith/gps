@@ -18,10 +18,10 @@ class AlgorithmMDGPS(Algorithm):
     Sample-based joint policy learning and trajectory optimization with
     (approximate) mirror descent guided policy search algorithm.
     """
-    def __init__(self, hyperparams):
+    def __init__(self, hyperparams, base_dir):
         config = copy.deepcopy(ALG_MDGPS)
         config.update(hyperparams)
-        Algorithm.__init__(self, config)
+        Algorithm.__init__(self, config, base_dir)
 
         policy_prior = self._hyperparams['policy_prior']
         for m in range(self.M):
@@ -33,7 +33,7 @@ class AlgorithmMDGPS(Algorithm):
             self._hyperparams['policy_opt'], self.dO, self.dU
         )
 
-    def iteration(self, sample_lists):
+    def iteration(self, sample_lists, iteration_num):
         """
         Run iteration of MDGPS-based guided policy search.
 
@@ -43,7 +43,7 @@ class AlgorithmMDGPS(Algorithm):
         # Store the samples and evaluate the costs.
         for m in range(self.M):
             self.cur[m].sample_list = sample_lists[m]
-            self._eval_cost(m)
+            self._eval_cost(m, iteration_num)
 
         # Update dynamics linearizations.
         self._update_dynamics()
