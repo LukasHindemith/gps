@@ -116,44 +116,11 @@ def evall1l2term_sparse(wp, d, Jd, Jdd, l1, l2, alpha):
     l = 0.5 * np.sum(dsclsq ** 2, axis=1) * l2 + \
             np.sqrt(alpha + np.sum(dscl ** 2, axis=1)) * l1
 
+    # Set all values to zero, except the last one -> sparse cost.
+    l[:-1] = 0.0
 
-    l[:-1] = 0
-    #l[:] = np.sum(l)
-
-    '''
-    # First order derivative terms.
-    d1 = dscl * l2 + (
-        dscls / np.sqrt(alpha + np.sum(dscl ** 2, axis=1, keepdims=True)) * l1
-    )
-    lx = np.sum(Jd * np.expand_dims(d1, axis=2), axis=1)
-    '''
     lx = np.zeros((T, Dx))
 
-    '''
-    # Second order terms.
-    psq = np.expand_dims(
-        np.sqrt(alpha + np.sum(dscl ** 2, axis=1, keepdims=True)), axis=1
-    )
-    d2 = l1 * (
-        (np.expand_dims(np.eye(wp.shape[1]), axis=0) *
-         (np.expand_dims(wp ** 2, axis=1) / psq)) -
-        ((np.expand_dims(dscls, axis=1) *
-          np.expand_dims(dscls, axis=2)) / psq ** 3)
-    )
-    d2 += l2 * (
-        np.expand_dims(wp, axis=2) * np.tile(np.eye(wp.shape[1]), [T, 1, 1])
-    )
-
-    d1_expand = np.expand_dims(np.expand_dims(d1, axis=-1), axis=-1)
-    sec = np.sum(d1_expand * Jdd, axis=1)
-
-    Jd_expand_1 = np.expand_dims(np.expand_dims(Jd, axis=2), axis=4)
-    Jd_expand_2 = np.expand_dims(np.expand_dims(Jd, axis=1), axis=3)
-    d2_expand = np.expand_dims(np.expand_dims(d2, axis=-1), axis=-1)
-    lxx = np.sum(np.sum(Jd_expand_1 * Jd_expand_2 * d2_expand, axis=1), axis=1)
-
-    lxx += 0.5 * sec + 0.5 * np.transpose(sec, [0, 2, 1])
-    '''
     lxx = np.zeros((T, Dx, Dx))
 
     return l, lx, lxx

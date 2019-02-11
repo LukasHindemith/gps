@@ -405,7 +405,7 @@ def main():
         import numpy as np
 
         for num_samples in [20, 30]:
-            for init_var in [5.0]:#[0.1, 1.0, 2.0, 3.0]:
+            for init_var in [0.1, 1.0, 2.0, 3.0]:
                 for cov_damp in [2.0, 1.0, 0.5]:
                     hyperparams.config['num_samples'] = num_samples
                     hyperparams.config['iterations'] = int(600/num_samples)

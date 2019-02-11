@@ -1,15 +1,15 @@
-""" This file defines the state target cost. """
+""" This file defines the human feedback cost. """
 import copy
 
 import numpy as np
 
 from gps.algorithm.cost.config import COST_STATE
 from gps.algorithm.cost.cost import Cost
-from gps.algorithm.cost.cost_utils import evall1l2term_sparse, get_ramp_multiplier
+from gps.algorithm.cost.cost_utils import get_ramp_multiplier
 
 
 class CostStateUser(Cost):
-    """ Computes l1/l2 distance to a fixed target state. """
+    """ Computes the human feedback 5 star cost. """
     def __init__(self, hyperparams, base_dir):
         config = copy.deepcopy(COST_STATE)
         config.update(hyperparams)
@@ -17,7 +17,7 @@ class CostStateUser(Cost):
 
     def eval(self, sample, iteration_num, sample_num):
         """
-        Evaluate cost function and derivatives on a sample.
+        Evaluates the human feedback and calculates sparse cost.
         Args:
             sample:  A single sample
         """
@@ -44,7 +44,7 @@ class CostStateUser(Cost):
                 wp_final_multiplier=self._hyperparams['wp_final_multiplier']
             )
             wp = wp * np.expand_dims(wpm, axis=-1)
-            # Compute state penalty.
+            # Compute 5-star system cost value and calculate sparse cost.
             dist = tgt - x
             dist[:-1] = 0.0
             np.savetxt("{}/update{}_sample{}_{}_dists.txt".format(self._base_dir, iteration_num, sample_num, data_type), np.array(dist))
@@ -52,16 +52,6 @@ class CostStateUser(Cost):
             l = np.concatenate(dist)
             ls = np.zeros((T, 1))
             lss = np.zeros((T, 1, 1))
-
-            '''
-            # Evaluate penalty term.
-            l, ls, lss = evall1l2term_sparse(
-                wp, dist, np.tile(np.eye(dim_sensor), [T, 1, 1]),
-                np.zeros((T, dim_sensor, dim_sensor, dim_sensor)),
-                self._hyperparams['l1'], self._hyperparams['l2'],
-                self._hyperparams['alpha']
-            )
-            '''
 
             final_l += l
 
